@@ -1,0 +1,98 @@
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        <title>Socket Game</title>
+        <style>
+            * { padding: 0; margin: 0; }
+            canvas { 
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: #eee;
+                /*
+                display: block;
+                margin: auto;
+                */
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="myCanvas" width="480" height="320"></canvas>
+        <script type="text/javascript">
+
+            var state = {players: {}}
+
+            function draw() {
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Draw all players
+                for (var player_id in state.players) {
+                    // Draw a circle
+                    // console.log(state.players[player_id])
+                    ctx.beginPath();
+                    ctx.arc(state.players[player_id].x, state.players[player_id].y, 20, 0, Math.PI*2, false);
+                    ctx.fillStyle = state.players[player_id].color;
+                    ctx.fill();
+                    ctx.closePath();
+                }
+            }
+
+            // Key Press handlers
+            rightPressed = false
+            function keyDownHandler(e) {
+                if(e.key == "Right" || e.key == "ArrowRight") {
+                    rightPressed = true;
+                }
+            }
+            function keyUpHandler(e) {
+                if(e.key == "Right" || e.key == "ArrowRight") {
+                    rightPressed = false;
+                }
+            }
+
+
+            // Setup Canvas
+            var canvas = document.getElementById("myCanvas");
+            var ctx = canvas.getContext("2d");
+
+            // Setup keyboard controls
+            document.addEventListener("keydown", keyDownHandler, false);
+            document.addEventListener("keyup", keyUpHandler, false);
+            
+            // Connect to server
+            if("WebSocket" in window) {
+                // Open a new websocket
+                var ws = new WebSocket("ws://localhost:8080/echo")
+
+                // Callback for messages from server
+                ws.onmessage = function(event) {
+                    // console.log(event.data)
+                    state.players = JSON.parse(event.data).players
+                    console.log(state)
+                    // draw()
+                }
+
+                ws.onclose = function() {
+                    console.log("Connection closed")
+                }
+
+                function gameLoop() {
+                    if(rightPressed) {
+                        ws.send(JSON.stringify({command: "right"}))
+                    }
+                    draw();
+                }
+
+                setInterval(gameLoop, 10)
+
+            } else {
+                console.log("WebSocket is NOT supported by this browser!")
+            }
+
+        </script>
+    </body>
+</html>
