@@ -37,7 +37,11 @@ wss.on("connection", function connection(client){
         "id": client.id,
         "color": getRandColor(),
         "x": 480/2,
-        "y": 320/2
+        "y": 320/2,
+        "l_vel": 0,
+        "r_vel": 0,
+        "u_vel": 0,
+        "d_vel": 0,
     }
 
     gameState.players[client.id] = player
@@ -47,22 +51,32 @@ wss.on("connection", function connection(client){
     // Callback for message from client
     client.on("message", (datastring) => {
         var data = JSON.parse(datastring)
+        console.log(client.id + ": " + datastring)
 
-        // console.log(client.id + ": " + datastring)
-        if(data.command === "left") {
-            gameState.players[client.id].x -= 2
+        if(data.command === "leftPressed") {
+            gameState.players[client.id].l_vel = 1
         }
-        if(data.command === "right") {
-            gameState.players[client.id].x += 2
+        else if(data.command === "leftReleased") {
+            gameState.players[client.id].l_vel = 0
         }
-        if(data.command === "up") {
-            gameState.players[client.id].y -= 2
+        else if(data.command === "rightPressed") {
+            gameState.players[client.id].r_vel = 1
         }
-        if(data.command === "down") {
-            gameState.players[client.id].y += 2
+        else if(data.command === "rightReleased") {
+            gameState.players[client.id].r_vel = 0
         }
-        // TODO make this a broadcast
-        wss.clients.forEach(client => {client.send(JSON.stringify(gameState))})
+        else if(data.command === "upPressed") {
+            gameState.players[client.id].u_vel = 1
+        }
+        else if(data.command === "upReleased") {
+            gameState.players[client.id].u_vel = 0
+        }
+        else if(data.command === "downPressed") {
+            gameState.players[client.id].d_vel = 1
+        }
+        else if(data.command === "downReleased") {
+            gameState.players[client.id].d_vel = 0
+        }
     })
 
     // Callback for client disconnect
@@ -78,3 +92,17 @@ wss.on("connection", function connection(client){
 wss.on("listening", () => {
     console.log(`listening on port ${PORT}`)
 })
+
+function gameLoop() {
+
+    for(let player_key in gameState.players) {
+        player = gameState.players[player_key]
+        player.x += player.r_vel - player.l_vel
+        player.y += player.d_vel - player.u_vel
+    }
+
+    // Broadcast state
+    wss.clients.forEach(client => {client.send(JSON.stringify(gameState))})
+}
+
+setInterval(gameLoop, 4)
