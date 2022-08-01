@@ -48,11 +48,21 @@ wss.on("connection", function connection(client){
     client.on("message", (datastring) => {
         var data = JSON.parse(datastring)
 
-        console.log(client.id + ": " + datastring)
+        // console.log(client.id + ": " + datastring)
+        if(data.command === "left") {
+            gameState.players[client.id].x -= 2
+        }
         if(data.command === "right") {
             gameState.players[client.id].x += 2
         }
-        client.send(JSON.stringify(gameState))
+        if(data.command === "up") {
+            gameState.players[client.id].y -= 2
+        }
+        if(data.command === "down") {
+            gameState.players[client.id].y += 2
+        }
+        // TODO make this a broadcast
+        wss.clients.forEach(client => {client.send(JSON.stringify(gameState))})
     })
 
     // Callback for client disconnect
